@@ -960,13 +960,22 @@ class OWBoxPlot(widget.OWWidget):
         self.box_scene.addLine(
             bottom * scale_x - 4, 0, top * scale_x + 4, 0, self._pen_axis)
 
+        t = QGraphicsSimpleTextItem(self.attribute.name)
+        t.setFont(self._axis_font)
+        t.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        t.setPos(
+            self.scene_min_x + (self.scene_width - t.boundingRect().width()) / 2,
+            8 + 1.5 * self._axis_font.pixelSize())
+        self.box_scene.addItem(t)
+
     def draw_stat(self):
         if self.stat_test:
             label = QGraphicsSimpleTextItem(self.stat_test)
             brect = self.box_scene.sceneRect()
-            label.setPos(brect.center().x() - label.boundingRect().width()/2,
-                         8 + self._axis_font.pixelSize()*2)
+            label.setPos(brect.x(),
+                         32 + self._axis_font.pixelSize() * 3.6)
             label.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            label.setFont(self._axis_font)
             self.box_scene.addItem(label)
 
     def draw_axis_disc(self):
@@ -1171,7 +1180,7 @@ class OWBoxPlot(widget.OWWidget):
         conditions = self._gather_conditions()
         if conditions:
             selected = Values(conditions, conjunction=False)(self.dataset)
-            selection = np.in1d(
+            selection = np.isin(
                 self.dataset.ids, selected.ids, assume_unique=True).nonzero()[0]
         else:
             selected, selection = None, []

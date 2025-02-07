@@ -3,12 +3,11 @@
 import unittest
 from tempfile import NamedTemporaryFile
 import os
-import io
 import warnings
 
 from Orange.data import Table, ContinuousVariable, DiscreteVariable
 from Orange.data.io import CSVReader
-from Orange.tests import test_filename
+from Orange.tests import test_filename, named_file
 
 tab_file = """\
 Feature 1\tFeature 2\tFeature 3
@@ -79,8 +78,11 @@ class TestTabReader(unittest.TestCase):
         self.read_easy(csv_file_nh, "Feature ")
 
     def test_read_csv_with_na(self):
-        c = io.StringIO(csv_file_missing)
-        table = CSVReader(c).read()
+        with NamedTemporaryFile(mode="w", delete=False) as tmp:
+            tmp.write(csv_file_missing)
+
+        table = CSVReader(tmp.name).read()
+        os.unlink(tmp.name)
         f1, f2 = table.domain.variables
         self.assertIsInstance(f1, ContinuousVariable)
         self.assertIsInstance(f2, DiscreteVariable)
@@ -121,3 +123,13 @@ time
         data = reader.read()
         self.assertEqual(len(data), 8)
         self.assertEqual(len(data.domain.variables) + len(data.domain.metas), 15)
+
+    def test_utf_8_sig(self):
+        with named_file(csv_file, encoding="utf-8-sig") as f:
+            reader = CSVReader(f)
+            data = reader.read()
+            self.assertEqual(data.domain[0].name, "Feature 1")
+
+
+if __name__ == "__main__":
+    unittest.main()

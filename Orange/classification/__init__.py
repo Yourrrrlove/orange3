@@ -1,5 +1,5 @@
 # Pull members from modules to Orange.classification namespace
-# pylint: disable=wildcard-import
+# pylint: disable=wildcard-import,broad-except
 
 from .base_classification import (ModelClassification as Model,
                                   LearnerClassification as Learner,
@@ -20,9 +20,10 @@ from .rules import *
 from .sgd import *
 from .neural_network import *
 from .calibration import *
+from .scoringsheet import *
 try:
     from .catgb import *
-except ModuleNotFoundError:
+except Exception:
     pass
 from .gb import *
 try:
