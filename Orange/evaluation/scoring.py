@@ -5,12 +5,13 @@ Examples
 --------
 >>> import Orange
 >>> data = Orange.data.Table('iris')
->>> learner = Orange.classification.LogisticRegressionLearner(solver="liblinear")
+>>> learner = Orange.classification.LogisticRegressionLearner()
 >>> results = Orange.evaluation.TestOnTrainingData(data, [learner])
 
 """
 
 import math
+import warnings
 
 import numpy as np
 import sklearn.metrics as skl_metrics
@@ -18,6 +19,8 @@ from sklearn.metrics import confusion_matrix
 
 from Orange.data import DiscreteVariable, ContinuousVariable, Domain
 from Orange.misc.wrapper_meta import WrapperMeta
+from Orange.util import OrangeDeprecationWarning
+
 
 __all__ = ["CA", "Precision", "Recall", "F1", "PrecisionRecallFSupport", "AUC",
            "MSE", "RMSE", "MAE", "MAPE", "R2", "LogLoss", "MatthewsCorrCoefficient"]
@@ -293,7 +296,7 @@ class LogLoss(ClassificationScore):
     Examples
     --------
     >>> Orange.evaluation.LogLoss(results)
-    array([0.3...])
+    array([0.1...])
 
     """
     __wraps__ = skl_metrics.log_loss
@@ -302,12 +305,20 @@ class LogLoss(ClassificationScore):
     long_name = "Logistic loss"
     default_visible = False
 
-    def compute_score(self, results, eps=1e-15, normalize=True,
+    def compute_score(self, results, eps="auto", normalize=True,
                       sample_weight=None):
+        if eps != "auto":
+            # eps argument will be removed in scikit-learn 1.5
+            warnings.warn(
+                (
+                    "`LogLoss.compute_score`: eps parameter is unused. "
+                    "It will always have value of `np.finfo(y_pred.dtype).eps`."
+                ),
+                OrangeDeprecationWarning,
+            )
         return np.fromiter(
             (skl_metrics.log_loss(results.actual,
                                   probabilities,
-                                  eps=eps,
                                   normalize=normalize,
                                   sample_weight=sample_weight)
              for probabilities in results.probabilities),
@@ -399,11 +410,17 @@ class MAE(RegressionScore):
     long_name = "Mean absolute error"
     priority = 40
 
+
 class MAPE(RegressionScore):
     __wraps__ = skl_metrics.mean_absolute_percentage_error
     name = "MAPE"
     long_name = "Mean absolute percentage error"
     priority = 45
+
+    def compute_score(self, results):
+        res = super().compute_score(results)
+        return res * 100
+
 
 # pylint: disable=invalid-name
 class R2(RegressionScore):
